@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { shelfScanLines, shelfScans } from '@pharmacy/database/schema'
+import { inventoryItems, shelfScanLines, shelfScans, stockMovements } from '@pharmacy/database/schema'
 import { getActorId } from '@/lib/auth'
 import { getDb } from '@/lib/db'
 import { errorResponse } from '@/lib/http'
@@ -11,6 +11,9 @@ const reviewSchema = z.object({
       lineId: z.string().uuid(),
       status: z.enum(['accepted', 'edited', 'rejected']),
       reviewerNote: z.string().max(500).optional(),
+      productLabel: z.string().trim().min(1).max(200).optional(),
+      quantity: z.number().int().min(0).optional(),
+      unit: z.string().trim().max(40).optional(),
     }),
   ),
 })
@@ -25,10 +28,59 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const db = getDb()
 
     for (const decision of decisions) {
+      const [line] = await db
+        .select()
+        .from(shelfScanLines)
+        .where(and(eq(shelfScanLines.id, decision.lineId), eq(shelfScanLines.scanId, id)))
+      if (!line) continue
+
+      const productLabel = decision.productLabel ?? line.productLabel
+      const quantity = decision.quantity ?? line.quantity
+      const unit = decision.unit ?? line.unit ?? 'units'
+
       await db
         .update(shelfScanLines)
-        .set({ reviewStatus: decision.status, reviewerNote: decision.reviewerNote })
+        .set({ productLabel, quantity, unit, reviewStatus: decision.status, reviewerNote: decision.reviewerNote })
         .where(eq(shelfScanLines.id, decision.lineId))
+
+      if (decision.status === 'rejected') continue
+
+      const [existing] = await db.select().from(inventoryItems).where(ilike(inventoryItems.name, productLabel)).limit(1)
+
+      if (!existing) {
+        const [created] = await db
+          .insert(inventoryItems)
+          .values({ name: productLabel, unit, currentQuantity: quantity, minimumQuantity: 0, updatedAt: new Date() })
+          .returning()
+        if (created) {
+          await db.insert(stockMovements).values({
+            itemId: created.id,
+            movementType: 'received',
+            quantityDelta: quantity,
+            reason: 'Verified from shelf photo',
+            source: 'shelf_scan',
+            shelfScanId: id,
+            actorId,
+          })
+        }
+      } else {
+        const delta = quantity - existing.currentQuantity
+        if (delta !== 0) {
+          await db
+            .update(inventoryItems)
+            .set({ currentQuantity: sql`${inventoryItems.currentQuantity} + ${delta}`, unit, updatedAt: new Date() })
+            .where(eq(inventoryItems.id, existing.id))
+          await db.insert(stockMovements).values({
+            itemId: existing.id,
+            movementType: 'adjustment',
+            quantityDelta: delta,
+            reason: 'Verified from shelf photo',
+            source: 'shelf_scan',
+            shelfScanId: id,
+            actorId,
+          })
+        }
+      }
     }
 
     await db

@@ -21,8 +21,9 @@ export async function POST(request: Request) {
     if (!scan) throw new Error('Unable to create shelf scan')
     const analysis = await analyzeShelfImage(imageUrl)
 
-    await getDb().insert(shelfScanLines).values(
-      analysis.observations.map((observation) => ({
+    const lines = await getDb()
+      .insert(shelfScanLines)
+      .values(analysis.observations.map((observation) => ({
         scanId: scan.id,
         productLabel: observation.productLabel,
         quantity: observation.quantity,
@@ -30,10 +31,10 @@ export async function POST(request: Request) {
         batchNumber: observation.batchNumber,
         expiryDate: observation.expiryDate ? new Date(observation.expiryDate) : undefined,
         confidence: Math.round(observation.confidence * 10000),
-      })),
-    )
+      })))
+      .returning()
 
-    return Response.json({ scanId: scan.id, analysis }, { status: 201 })
+    return Response.json({ scanId: scan.id, analysis, lines }, { status: 201 })
   } catch (error) {
     return errorResponse(error)
   }

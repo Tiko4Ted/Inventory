@@ -1,14 +1,18 @@
 import { getActorId } from '@/lib/auth'
-import { createUploadResponse } from '@/lib/blob-storage'
 import { errorResponse } from '@/lib/http'
-import type { HandleUploadBody } from '@vercel/blob/client'
+import { uploadPrivateShelfImage } from '@/lib/blob-storage'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
   try {
     const actorId = await getActorId()
-    return Response.json(await createUploadResponse(request, (await request.json()) as HandleUploadBody, actorId))
+    const formData = await request.formData()
+    const file = formData.get('file')
+    if (!(file instanceof Blob)) return Response.json({ error: 'An image file is required' }, { status: 400 })
+
+    const blob = await uploadPrivateShelfImage(file, actorId)
+    return Response.json({ url: blob.url, pathname: blob.pathname, contentType: blob.contentType })
   } catch (error) {
     return errorResponse(error)
   }
