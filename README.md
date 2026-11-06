@@ -36,6 +36,10 @@ conditions.
 - AI shelf-analysis service returning structured suggestions
 - Review endpoint that requires user confirmation before committing suggestions
 - Manual inventory entry flow in the mobile app
+- Authenticated direct-to-Blob mobile uploads with multipart support
+- Image compression, upload progress, retry handling, and offline photo queueing
+- Automatic retry when network connectivity returns
+- Editable AI product name, quantity, and unit before approval
 - Basic API health endpoint
 - Audit-log schema for later implementation of a complete change history
 
@@ -208,12 +212,15 @@ reach the computer through `localhost`; use the computer's LAN address or Expo t
 ### Shelf-photo capture
 
 1. Staff captures a shelf image in the mobile app.
-2. The image is uploaded directly to private Blob storage.
-3. The API creates a pending shelf scan.
-4. The AI service returns structured product suggestions with confidence values.
-5. Staff verifies, edits, or rejects every suggested line.
-6. Only approved lines are committed as inventory changes.
-7. The scan and review actions are retained for auditability.
+2. The image is resized and compressed on the device.
+3. The mobile app requests an authenticated client upload token.
+4. The image uploads directly to private Blob storage, including multipart upload support for larger images.
+5. If the device is offline, the photo is queued locally and retried when connectivity returns.
+6. The API creates a pending shelf scan.
+7. The AI service returns structured product suggestions with confidence values.
+8. Staff verifies, edits, or rejects every suggested line.
+9. Only approved lines are committed as inventory changes.
+10. The scan and review actions are retained for auditability.
 
 AI is an assistant, not an authority. It must not silently change stock quantities.
 

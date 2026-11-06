@@ -1,17 +1,27 @@
 import * as ImagePicker from 'expo-image-picker'
 import { Link, router } from 'expo-router'
 import { useMemo, useState } from 'react'
+import { useEffect } from 'react'
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Screen } from '@/components/Screen'
 import { StatusBadge } from '@/components/StatusBadge'
 import { useInventoryItems } from '@/features/inventory/hooks'
 import type { InventoryItem } from '@/features/inventory/types'
+import { getPhotoQueueSummary, listReadyScans } from '@/lib/photo-queue'
 import { colors } from '@/theme'
 
 export default function InventoryScreen() {
   const inventory = useInventoryItems()
   const [actionsOpen, setActionsOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [queueSummary, setQueueSummary] = useState({ pendingCount: 0, readyCount: 0 })
+
+  useEffect(() => {
+    const refresh = () => void getPhotoQueueSummary().then(setQueueSummary)
+    refresh()
+    const timer = setInterval(refresh, 5000)
+    return () => clearInterval(timer)
+  }, [])
 
   const items = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -60,6 +70,15 @@ export default function InventoryScreen() {
         <Text style={styles.searchIcon}>⌕</Text>
         <TextInput accessibilityLabel="Search inventory" onChangeText={setSearch} placeholder="Search products, SKU, or category" placeholderTextColor="#8BA099" style={styles.searchInput} value={search} />
       </View>
+
+      {queueSummary.readyCount > 0 || queueSummary.pendingCount > 0 ? <Pressable accessibilityRole="button" onPress={async () => {
+        const ready = await listReadyScans()
+        if (ready[0]) router.push({ pathname: '/(tabs)/inventory/review-scan', params: { scanId: ready[0].scanId } })
+      }} style={styles.queueBanner}>
+        <View style={styles.queueBadge}><Text style={styles.queueBadgeText}>{queueSummary.readyCount + queueSummary.pendingCount}</Text></View>
+        <View style={styles.queueCopy}><Text style={styles.queueTitle}>{queueSummary.readyCount > 0 ? 'Shelf captures ready for review' : 'Shelf photo saved offline'}</Text><Text style={styles.queueSubtitle}>{queueSummary.readyCount > 0 ? 'Tap to review the next verified AI result.' : 'It will upload automatically when the connection returns.'}</Text></View>
+        <Text style={styles.queueChevron}>›</Text>
+      </Pressable> : null}
 
       <View style={styles.sectionHeader}>
         <View><Text style={styles.sectionTitle}>All stock</Text><Text style={styles.sectionSubtitle}>Tap a product to view its movement history.</Text></View>
@@ -152,6 +171,13 @@ const styles = StyleSheet.create({
   emptyEmoji: { color: colors.green, fontSize: 34 },
   emptyTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginTop: 12 },
   emptyCopy: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: 6, textAlign: 'center' },
+  queueBanner: { alignItems: 'center', backgroundColor: '#FFF7E8', borderRadius: 17, flexDirection: 'row', marginTop: 14, padding: 13 },
+  queueBadge: { alignItems: 'center', backgroundColor: colors.amber, borderRadius: 12, height: 36, justifyContent: 'center', width: 36 },
+  queueBadgeText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  queueCopy: { flex: 1, marginLeft: 11 },
+  queueTitle: { color: colors.amber, fontSize: 13, fontWeight: '900' },
+  queueSubtitle: { color: colors.muted, fontSize: 12, lineHeight: 17, marginTop: 3 },
+  queueChevron: { color: colors.amber, fontSize: 26, marginLeft: 8 },
   actionsButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.green, borderRadius: 18, bottom: 18, flexDirection: 'row', elevation: 5, gap: 8, paddingHorizontal: 22, paddingVertical: 14, position: 'absolute', shadowColor: '#123B2C', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.22, shadowRadius: 9 },
   actionsPlus: { color: colors.mint, fontSize: 22, fontWeight: '500', lineHeight: 22 },
   actionsText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },

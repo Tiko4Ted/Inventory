@@ -13,11 +13,17 @@
     "build": "expo export --platform web"
   },
   "dependencies": {
+    "@clerk/clerk-expo": "latest",
+    "@react-native-async-storage/async-storage": "latest",
+    "@react-native-community/netinfo": "latest",
     "@pharmacy/shared": "workspace:*",
     "@tanstack/react-query": "^5.90.5",
+    "@vercel/blob": "latest",
     "expo": "latest",
+    "expo-image-manipulator": "latest",
     "expo-image-picker": "latest",
     "expo-router": "latest",
+    "expo-secure-store": "latest",
     "expo-status-bar": "latest",
     "react": "latest",
     "react-native": "latest",
