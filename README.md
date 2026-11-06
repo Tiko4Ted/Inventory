@@ -39,7 +39,8 @@ conditions.
 - Authenticated direct-to-Blob mobile uploads with multipart support
 - Image compression, upload progress, retry handling, and offline photo queueing
 - Automatic retry when network connectivity returns
-- Editable AI product name, quantity, and unit before approval
+- Editable AI product name, quantity, unit, batch, and expiry before approval
+- Scheduled cleanup of reviewed shelf photos after the configured retention period
 - Basic API health endpoint
 - Audit-log schema for later implementation of a complete change history
 
@@ -242,16 +243,19 @@ AI is an assistant, not an authority. It must not silently change stock quantiti
 ### Shelf scans
 
 - `POST /api/uploads`
+- `POST /api/uploads/client-token`
 - `POST /api/inventory/shelf-scans`
 - `GET /api/inventory/shelf-scans/:id`
+- `POST /api/inventory/shelf-scans/:id/retry`
 - `POST /api/inventory/shelf-scans/:id/review`
 
 ### Scheduled jobs
 
 - `GET /api/jobs/reminders`
+- `GET /api/jobs/cleanup`
 
-The reminder endpoint is reserved for the family-planning module and must be protected with a
-deployment-specific cron secret before production use.
+Scheduled job endpoints must be protected with a deployment-specific cron secret before production
+use. Cleanup removes reviewed shelf photos and their scan metadata after `SHELF_SCAN_RETENTION_DAYS`.
 
 ## Security requirements
 

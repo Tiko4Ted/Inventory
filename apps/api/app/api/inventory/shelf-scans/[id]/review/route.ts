@@ -14,6 +14,8 @@ const reviewSchema = z.object({
       productLabel: z.string().trim().min(1).max(200).optional(),
       quantity: z.number().int().min(0).optional(),
       unit: z.string().trim().max(40).optional(),
+      batchNumber: z.string().trim().max(120).optional(),
+      expiryDate: z.string().date().optional(),
     }),
   ),
 })
@@ -37,10 +39,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       const productLabel = decision.productLabel ?? line.productLabel
       const quantity = decision.quantity ?? line.quantity
       const unit = decision.unit ?? line.unit ?? 'units'
+      const batchNumber = decision.batchNumber ?? line.batchNumber ?? undefined
+      const expiryDate = decision.expiryDate ? new Date(decision.expiryDate) : line.expiryDate ?? undefined
 
       await db
         .update(shelfScanLines)
-        .set({ productLabel, quantity, unit, reviewStatus: decision.status, reviewerNote: decision.reviewerNote })
+        .set({ productLabel, quantity, unit, batchNumber, expiryDate, reviewStatus: decision.status, reviewerNote: decision.reviewerNote })
         .where(eq(shelfScanLines.id, decision.lineId))
 
       if (decision.status === 'rejected') continue
@@ -50,7 +54,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       if (!existing) {
         const [created] = await db
           .insert(inventoryItems)
-          .values({ name: productLabel, unit, currentQuantity: quantity, minimumQuantity: 0, updatedAt: new Date() })
+          .values({ name: productLabel, unit, currentQuantity: quantity, minimumQuantity: 0, batchNumber, expiryDate, updatedAt: new Date() })
           .returning()
         if (created) {
           await db.insert(stockMovements).values({
@@ -68,7 +72,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         if (delta !== 0) {
           await db
             .update(inventoryItems)
-            .set({ currentQuantity: sql`${inventoryItems.currentQuantity} + ${delta}`, unit, updatedAt: new Date() })
+            .set({ currentQuantity: sql`${inventoryItems.currentQuantity} + ${delta}`, unit, batchNumber, expiryDate, updatedAt: new Date() })
             .where(eq(inventoryItems.id, existing.id))
           await db.insert(stockMovements).values({
             itemId: existing.id,

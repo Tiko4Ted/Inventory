@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { shelfScanLines, shelfScans } from '@pharmacy/database/schema'
+import type { ShelfAnalysis } from '@pharmacy/shared'
 import { getActorId } from '@/lib/auth'
 import { analyzeShelfImage } from '@/lib/ai'
 import { getDb } from '@/lib/db'
@@ -19,7 +21,13 @@ export async function POST(request: Request) {
       .returning()
 
     if (!scan) throw new Error('Unable to create shelf scan')
-    const analysis = await analyzeShelfImage(imageUrl)
+    let analysis: ShelfAnalysis
+    try {
+      analysis = await analyzeShelfImage(imageUrl)
+    } catch (error) {
+      await getDb().update(shelfScans).set({ status: 'failed', rawAnalysis: { error: error instanceof Error ? error.message : 'AI analysis failed' } }).where(eq(shelfScans.id, scan.id))
+      throw error
+    }
 
     const lines = await getDb()
       .insert(shelfScanLines)

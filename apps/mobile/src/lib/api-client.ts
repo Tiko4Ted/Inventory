@@ -78,7 +78,7 @@ export async function uploadShelfPhoto(uri: string, onProgress?: (percentage: nu
 
 export async function processShelfPhoto(uri: string, onProgress?: (percentage: number) => void) {
   const imageUrl = await uploadShelfPhoto(uri, onProgress)
-  return api<{ scanId: string; lines: Array<{ id: string; productLabel: string; quantity: number; unit: string | null; confidence: number }> }>('/api/inventory/shelf-scans', {
+  return api<{ scanId: string; lines: Array<{ id: string; productLabel: string; quantity: number; unit: string | null; batchNumber: string | null; expiryDate: string | null; confidence: number }> }>('/api/inventory/shelf-scans', {
     method: 'POST',
     body: JSON.stringify({ imageUrl }),
   })
