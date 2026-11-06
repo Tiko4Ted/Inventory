@@ -1,0 +1,24 @@
+{
+  "name": "pharmacy-management",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "dev:api": "pnpm --filter @pharmacy/api dev",
+    "dev:mobile": "pnpm --filter @pharmacy/mobile start",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @pharmacy/database db:generate",
+    "db:migrate": "pnpm --filter @pharmacy/database db:migrate",
+    "db:seed": "pnpm --filter @pharmacy/database db:seed"
+  },
+  "devDependencies": {
+    "@vercel/config": "latest",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.3"
+  }
+}

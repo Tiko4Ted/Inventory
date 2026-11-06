@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Pharmacy Inventory",
+    "slug": "pharmacy-inventory",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "pharmacyinventory",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tiko4ted.pharmacyinventory"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E9F7EF"
+      },
+      "package": "com.tiko4ted.pharmacyinventory"
+    },
+    "plugins": ["expo-router", "expo-image-picker"]
+  }
+}
