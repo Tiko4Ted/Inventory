@@ -31,7 +31,10 @@ conditions.
 - Inventory item records
 - Quantity, unit, category, batch number, expiry date, and minimum-stock threshold
 - Stock movement records for received, dispensed, damaged, expired, and manual adjustments
-- Current stock and low-stock API endpoints
+- Current stock, low-stock, expiry, and reconciliation API endpoints
+- Product detail, edit, archive, restore, and movement-history workflows
+- Transactional stock updates that reject dispensing more than the available quantity
+- Audit events for inventory item creation, edits, archive/restore, movement, and reconciliation
 - Shelf-image upload flow using private object storage
 - AI shelf-analysis service returning structured suggestions
 - Review endpoint that requires user confirmation before committing suggestions
@@ -237,7 +240,12 @@ AI is an assistant, not an authority. It must not silently change stock quantiti
 - `POST /api/inventory/items`
 - `GET /api/inventory/items/:id`
 - `PATCH /api/inventory/items/:id`
+- `POST /api/inventory/items/:id/archive`
+- `POST /api/inventory/items/:id/restore`
+- `GET /api/inventory/items/:id/movements`
 - `POST /api/inventory/movements`
+- `GET /api/inventory/expiring?days=90`
+- `POST /api/inventory/reconcile`
 - `GET /api/inventory/alerts`
 
 ### Shelf scans
@@ -275,6 +283,7 @@ Before production:
 ## Quality checks
 
 ```bash
+pnpm test
 pnpm typecheck
 pnpm lint
 pnpm format:check
@@ -323,5 +332,8 @@ git remote set-url origin https://github.com/Tiko4Ted/Inventory.git
   the target project is linked.
 - The mobile app provides the inventory navigation and capture/review surfaces; final device
   permissions and production upload testing require an Expo development build.
+- The inventory APIs and shared validation are covered by automated unit tests, but real database
+  transaction tests, authenticated API integration tests, and device-level camera/upload tests
+  still need to run against provisioned services.
 - Family-planning records and live SMS sending are represented as documented extension points, not
   enabled against real client data yet.

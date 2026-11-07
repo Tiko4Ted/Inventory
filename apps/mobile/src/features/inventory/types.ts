@@ -8,4 +8,16 @@ export type InventoryItem = {
   minimumQuantity: number
   batchNumber: string | null
   expiryDate: string | null
+  isActive?: boolean
+}
+
+export type StockMovement = {
+  id: string
+  itemId: string
+  movementType: string
+  quantityDelta: number
+  reason: string
+  source: string
+  actorId: string
+  createdAt: string
 }
